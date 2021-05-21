@@ -1,9 +1,8 @@
 from aiohttp.web import Application, run_app
 import asyncio
 
-from router import create_routes
+from routes import create_routes
 import database
-# from database import init_database
 import settings
 
 import sys

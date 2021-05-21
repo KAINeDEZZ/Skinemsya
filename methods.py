@@ -1,6 +1,10 @@
 from aiohttp.web import Request, Response, json_response
 
 
+async def test_view(request):
+    return json_response({'params': str(dict(request.query))})
+
+
 async def get_all_purchases(request, user_id):
     """
     Получение всех закупок
