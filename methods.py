@@ -8,7 +8,7 @@ import utils
 from database import User
 
 
-async def auth(request, sign, user_id):
+async def auth(request, sign, vk_user_id):
     params = dict(request.query)
 
     async with aiofile.async_open('keys.json', 'r') as file:
@@ -19,11 +19,11 @@ async def auth(request, sign, user_id):
     if status:
         token = utils.create_token()
         now = datetime.datetime.now()
-        user_data = await User.objects.execute(User.select().where(User.user_id == user_id))
+        user_data = await User.objects.execute(User.select().where(User.user_id == vk_user_id))
 
         if not user_data:
             await User.async_create(
-                user_id=user_id,
+                user_id=vk_user_id,
                 token=token,
                 last_active=now
             )
