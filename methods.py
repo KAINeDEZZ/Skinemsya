@@ -1,17 +1,42 @@
-from aiohttp.web import Request, json_response
-import utils
+from aiohttp.web import json_response
+import aiofile
 
+import datetime
+import json
+
+import utils
 from database import User
 
 
-async def auth(request):
+async def auth(request, sign, user_id):
     params = dict(request.query)
-    status = utils.is_valid(query=params, secret="12")
+
+    async with aiofile.async_open('keys.json', 'r') as file:
+        secret_key = json.loads(await file.read())['secret_key']
+
+    status = utils.is_valid(params, sign, secret_key)
 
     if status:
-        return json_response({'token': '123456'}, headers={'Access-Control-Allow-Origin': '*'})
+        token = utils.create_token()
+        now = datetime.datetime.now()
+        user_data = await User.objects.execute(User.select().where(User.user_id == user_id))
+
+        if not user_data:
+            await User.async_create(
+                user_id=user_id,
+                token=token,
+                last_active=now
+            )
+        else:
+            user_data = user_data[0]
+            user_data.token = token
+
+            await User.async_update(user_data)
+
+        return json_response({'token': token})
+
     else:
-        return json_response({}, headers={'Access-Control-Allow-Origin': '*'}, status=400)
+        return json_response({}, status=400)
 
 
 async def get_all_purchases(user_id):
@@ -35,7 +60,7 @@ async def get_purchase(purchase_id):
 
     :return: Response
     """
-    return json_response()
+    return json_response({})
 
 
 async def create_purchase(user_id, title, description=None):
@@ -53,7 +78,7 @@ async def create_purchase(user_id, title, description=None):
 
     :return: Response
     """
-    return json_response()
+    return json_response({})
 
 
 async def edit_purchase(purchase_id, title=None, description=None):
@@ -71,7 +96,7 @@ async def edit_purchase(purchase_id, title=None, description=None):
 
     :return: Response
     """
-    return json_response()
+    return json_response({})
 
 
 async def create_product(title, cost, description=None):
@@ -89,7 +114,7 @@ async def create_product(title, cost, description=None):
 
     :return: Response
     """
-    return json_response()
+    return json_response({})
 
 
 async def edit_product(product_id, title=None, description=None, cost=None):
@@ -111,4 +136,4 @@ async def edit_product(product_id, title=None, description=None, cost=None):
     :return: Response
     """
 
-    return json_response()
+    return json_response({})
