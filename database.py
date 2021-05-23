@@ -17,13 +17,16 @@ class Purchase(AsyncModel):
     users = peewee.ManyToManyField(User, backref='purchase')
     status = peewee.CharField(max_length=20, choices=Status.CHOOSES)
 
+    title = peewee.CharField(max_length=20)
+    description = peewee.CharField(max_length=100)
+
     created_at = peewee.DateTimeField()
     billing_at = peewee.DateTimeField()
     ending_at = peewee.DateTimeField()
 
 
 class Product(AsyncModel):
-    title = peewee.CharField(max_length=100)
+    title = peewee.CharField(max_length=30)
     description = peewee.CharField(max_length=100, null=True)
     cost = peewee.IntegerField()
 
