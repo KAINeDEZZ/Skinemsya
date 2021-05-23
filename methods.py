@@ -1,11 +1,20 @@
-from aiohttp.web import Request, Response, json_response
+from aiohttp.web import Request, json_response
+import utils
+
+from database import User
 
 
-async def test_view(request):
-    return json_response({'params': str(dict(request.query))})
+async def auth(request):
+    params = dict(request.query)
+    status = utils.is_valid(query=params, secret="12")
+
+    if status:
+        return json_response({'token': '123456'}, headers={'Access-Control-Allow-Origin': '*'})
+    else:
+        return json_response({}, headers={'Access-Control-Allow-Origin': '*'}, status=400)
 
 
-async def get_all_purchases(request, user_id):
+async def get_all_purchases(user_id):
     """
     Получение всех закупок
 
@@ -17,7 +26,7 @@ async def get_all_purchases(request, user_id):
 
     :return: Response
     """
-    return json_response()
+    return json_response({})
 
 
 async def get_purchase(request, purchase_id):

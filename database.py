@@ -1,22 +1,50 @@
 import peewee
-import peewee_async
+
+from database_driver import AsyncModel
 
 
-# database = peewee_async.PostgresqlDatabase(
-#     database='skinemsya',
-#     user='postgres',
-#     host='127.0.0.1',
-#     port='5432',
-#     password='4296'
-# )
+class User(AsyncModel):
+    user_id = peewee.IntegerField()
+    token = peewee.CharField(max_length=100)
+    last_active = peewee.DateTimeField(null=True)
 
 
-# class TestModel(peewee.Model):
-#     text = peewee.TextField()
-#
-#     class Meta:
-#         database = database
-#
-# print(TestModel.create_table())
-# objects = peewee_async.Manager(database)
-# objects.execute()
+class Purchase(AsyncModel):
+    class Status:
+        CHOOSES = ()
+
+    owner = peewee.ForeignKeyField(User)
+    users = peewee.ManyToManyField(User, backref='purchase')
+    status = peewee.CharField(max_length=20, choices=Status.CHOOSES)
+
+    created_at = peewee.DateTimeField()
+    billing_at = peewee.DateTimeField()
+    ending_at = peewee.DateTimeField()
+
+
+class Product(AsyncModel):
+    title = peewee.CharField(max_length=100)
+    description = peewee.CharField(max_length=100, null=True)
+    cost = peewee.IntegerField()
+
+    purchase = peewee.ForeignKeyField(Purchase, backref='products')
+
+
+class UserBill(AsyncModel):
+    class Status:
+        WAIT = 'wait'
+        SENT = 'sent'
+        CONFIRM = 'confirm'
+
+        CHOOSES = (WAIT, SENT, CONFIRM)
+
+    products = peewee.ManyToManyField(Product, backref='user_bill')
+    purchase = peewee.ForeignKeyField(Purchase, backref='user_bill')
+    user = peewee.ForeignKeyField(User, backref='user_bill')
+    status = peewee.CharField(max_length=20, choices=Status.CHOOSES, default=Status.WAIT)
+
+
+User.create_table()
+Purchase.create_table()
+Product.create_table()
+UserBill.create_table()

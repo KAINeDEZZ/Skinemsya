@@ -11,7 +11,7 @@ if sys.version_info >= (3, 8) and sys.platform.lower().startswith("win"):
 
 
 database = peewee_async.PostgresqlDatabase(
-    database='servermanager',
+    database='skinemsya',
     user='postgres',
     host='127.0.0.1',
     port='5432',
