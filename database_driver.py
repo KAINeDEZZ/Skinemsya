@@ -1,9 +1,9 @@
 import peewee
 import peewee_async
-import database
 
 import sys
 import asyncio
+import datetime
 
 
 if sys.version_info >= (3, 8) and sys.platform.lower().startswith("win"):
@@ -30,6 +30,25 @@ class AsyncModel(peewee.Model):
         database = database
 
     objects = objects
+
+    def to_json(self):
+        data = {}
+        for key in self.__data__:
+            value = self.__data__[key]
+
+            if type(value) is datetime.datetime:
+                value = f'{value.year}-{value.month}-{value.day}T{value.hour}:{value.min}'
+
+            elif type(value) is datetime.date:
+                value = f'{value.year}-{value.month}-{value.day}'
+
+            data[key] = value
+
+        return data
+
+
+    def jija(self):
+        print()
 
     @classmethod
     async def async_create(cls, **query):

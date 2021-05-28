@@ -5,6 +5,10 @@ from hashlib import sha256
 from hmac import HMAC
 from urllib.parse import urlencode
 
+import datetime
+
+from database import User
+
 
 def is_valid(query: dict, sign, secret: str) -> bool:
     """Check VK Apps signature"""
@@ -15,9 +19,9 @@ def is_valid(query: dict, sign, secret: str) -> bool:
     return sign == decoded_hash_code
 
 
-def create_token():
+def create_token(length):
     symbols = []
-    for _ in range(50):
+    for _ in range(length):
         symbol_type = random.randint(0, 2)
         if symbol_type == 0:
             symbol_code = random.randint(65, 90)
@@ -31,3 +35,14 @@ def create_token():
         symbols.append(chr(symbol_code))
 
     return ''.join(symbols)
+
+
+async def get_user_data(user_id):
+    return (await User.objects.execute(User.select().where(User.user_id == int(user_id))))[0]
+
+
+def load_datetime(string_datetime):
+    try:
+        return datetime.datetime.strptime(string_datetime, '%Y-%m-%dT%H:%M')
+    except ValueError:
+        return False

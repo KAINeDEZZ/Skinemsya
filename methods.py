@@ -17,7 +17,7 @@ async def auth(request, sign, vk_user_id):
     status = utils.is_valid(params, sign, secret_key)
 
     if status:
-        token = utils.create_token()
+        token = utils.create_token(50)
         now = datetime.datetime.now()
         user_data = await User.objects.execute(User.select().where(User.user_id == vk_user_id))
 
@@ -64,7 +64,7 @@ async def get_purchase(purchase_id):
     return json_response({})
 
 
-async def create_purchase(user_id, title, description=None):
+async def create_purchase(user_id, title, billing_at, ending_at, description=None):
     """
     Создание закупки
 
@@ -79,21 +79,32 @@ async def create_purchase(user_id, title, description=None):
 
     :return: Response
     """
-    user_data = await User.objects.execute(User.select().where(User.user_id == int(user_id)))
-    print(user_data[0])
-    print(await Purchase.async_create(
-        owner=user_data[0],
+    try:
+        billing_at = datetime.datetime.strptime(billing_at, '%Y-%m-%dT%H:%M')
+        ending_at = datetime.datetime.strptime(ending_at, '%Y-%m-%dT%H:%M')
+    except ValueError:
+        return json_response({'error': 'Invalid datetime'}, status=400)
+
+    now = datetime.datetime.now().replace(microsecond=0)
+
+    if not (now < billing_at < ending_at):
+        return json_response({'error': 'Invalid date'}, status=400)
+
+    user_data = await utils.get_user_data(user_id)
+    purchase_data = await Purchase.async_create(
+        owner=user_data,
         title=title,
-        # description=description,
+        description=description,
 
         created_at=datetime.datetime.now(),
-        billing_at=datetime.datetime.now(),
-        ending_at=datetime.datetime.now(),
-    ))
-    return json_response({})
+        billing_at=billing_at,
+        ending_at=ending_at,
+    )
+
+    return json_response(purchase_data.to_json())
 
 
-async def edit_purchase(purchase_id, title=None, description=None):
+async def edit_purchase(user_id, purchase_id, title=None, description=None, billing_at=None, ending_at=None):
     """
     Редактирование закупки
 
@@ -108,10 +119,62 @@ async def edit_purchase(purchase_id, title=None, description=None):
 
     :return: Response
     """
-    return json_response({})
+    purchase_data = await Purchase.execute(Purchase.select().where(Purchase.id == purchase_id))
+    if not purchase_data:
+        return json_response({'error': 'Cant find purchase with this id'}, status=404)
+
+    purchase_data = purchase_data[0]
+    user_data = await utils.get_user_data(user_id)
+
+    if purchase_data.owner != user_data:
+        return json_response({'error': 'No permissions'}, status=400)
+
+    was_set = []
+    if title:
+        purchase_data.title = title
+        was_set.append('title')
+
+    if description:
+        purchase_data.description = description
+        was_set.append('description')
+
+    if billing_at or ending_at:
+        billing_at = utils.load_datetime(billing_at)
+        ending_at = utils.load_datetime(ending_at)
+
+        if (billing_at and ending_at and not purchase_data.start_at < billing_at < ending_at) or \
+                (billing_at and not purchase_data.start_at < billing_at) or \
+                (ending_at and not purchase_data.start_at < ending_at):
+            return json_response({'error': 'Invalid datetime'}, status=400)
+
+        if billing_at:
+            purchase_data.billing_at = billing_at
+            was_set.append('billing_at')
+
+        if ending_at:
+            purchase_data.ending_at = ending_at
+            was_set.append('ending_at')
+
+    return json_response({'was_set': was_set})
 
 
-async def create_product(title, cost, description=None):
+async def delete_purchase(user_id, purchase_id):
+    purchase_data = await Purchase.execute(Purchase.select().where(Purchase.id == purchase_id))
+    if not purchase_data:
+        return json_response({'error': 'Cant find purchase with this id'}, status=404)
+
+    purchase_data = purchase_data[0]
+    user_data = await utils.get_user_data(user_id)
+
+    if purchase_data.owner != user_data:
+        return json_response({'error': 'No permissions'}, status=400)
+
+    await Purchase.objects.delete(purchase_data)
+
+    return json_response({'deleted_id': purchase_id})
+
+
+async def create_product(user_id, purchase_id, title, cost, description=None):
     """
     Создание продукта
 

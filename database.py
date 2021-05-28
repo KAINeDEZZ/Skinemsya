@@ -1,6 +1,7 @@
 import peewee
 
 from database_driver import AsyncModel
+import utils
 
 
 class User(AsyncModel):
@@ -33,6 +34,8 @@ class Purchase(AsyncModel):
     created_at = peewee.DateTimeField()
     billing_at = peewee.DateTimeField()
     ending_at = peewee.DateTimeField()
+
+    invite_key = peewee.CharField(max_length=100, default=lambda: utils.create_token(20))
 
     def __str__(self):
         return f'{self.owner} {self.title} {self.status}'
@@ -70,3 +73,5 @@ User.create_table()
 Purchase.create_table()
 Product.create_table()
 UserBill.create_table()
+
+# User.create(user_id='1234567890', token='qwerty12345')
