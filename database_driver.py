@@ -33,7 +33,7 @@ class AsyncModel(peewee.Model):
 
     @classmethod
     async def async_create(cls, **query):
-        await objects.create(cls, **query)
+        return await objects.create(cls, **query)
 
     @classmethod
     async def execute(cls, selector):
@@ -41,4 +41,4 @@ class AsyncModel(peewee.Model):
 
     @classmethod
     async def async_update(cls, obj, only=None):
-        await cls.objects.update(obj, only=only)
+        return await cls.objects.update(obj, only=only)

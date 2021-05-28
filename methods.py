@@ -5,7 +5,7 @@ import datetime
 import json
 
 import utils
-from database import User
+from database import User, Purchase, Product
 
 
 async def auth(request, sign, vk_user_id):
@@ -48,6 +48,7 @@ async def get_all_purchases(user_id):
 
     :return: Response
     """
+
     return json_response({})
 
 
@@ -78,6 +79,17 @@ async def create_purchase(user_id, title, description=None):
 
     :return: Response
     """
+    user_data = await User.objects.execute(User.select().where(User.user_id == int(user_id)))
+    print(user_data[0])
+    print(await Purchase.async_create(
+        owner=user_data[0],
+        title=title,
+        # description=description,
+
+        created_at=datetime.datetime.now(),
+        billing_at=datetime.datetime.now(),
+        ending_at=datetime.datetime.now(),
+    ))
     return json_response({})
 
 
