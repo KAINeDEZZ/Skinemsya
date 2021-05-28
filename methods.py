@@ -119,15 +119,9 @@ async def edit_purchase(user_id, purchase_id, title=None, description=None, bill
 
     :return: Response
     """
-    purchase_data = await Purchase.execute(Purchase.select().where(Purchase.id == purchase_id))
+    user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
     if not purchase_data:
-        return json_response({'error': 'Cant find purchase with this id'}, status=404)
-
-    purchase_data = purchase_data[0]
-    user_data = await utils.get_user_data(user_id)
-
-    if purchase_data.owner != user_data:
-        return json_response({'error': 'No permissions'}, status=400)
+        return user_data
 
     was_set = []
     if title:
@@ -155,19 +149,14 @@ async def edit_purchase(user_id, purchase_id, title=None, description=None, bill
             purchase_data.ending_at = ending_at
             was_set.append('ending_at')
 
+    await Purchase.async_update(purchase_data)
     return json_response({'was_set': was_set})
 
 
 async def delete_purchase(user_id, purchase_id):
-    purchase_data = await Purchase.execute(Purchase.select().where(Purchase.id == purchase_id))
+    user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
     if not purchase_data:
-        return json_response({'error': 'Cant find purchase with this id'}, status=404)
-
-    purchase_data = purchase_data[0]
-    user_data = await utils.get_user_data(user_id)
-
-    if purchase_data.owner != user_data:
-        return json_response({'error': 'No permissions'}, status=400)
+        return user_data
 
     await Purchase.objects.delete(purchase_data)
 
@@ -189,10 +178,24 @@ async def create_product(user_id, purchase_id, title, cost, description=None):
 
     :return: Response
     """
-    return json_response({})
+    user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
+    if not purchase_data:
+        return user_data
+
+    if cost < 0:
+        return json_response({'error': 'Invalid cost'}, status=400)
+
+    product_data = await Product.async_create(
+        title=title,
+        description=description,
+        cost=cost,
+        purchase=purchase_data
+    )
+
+    return json_response(product_data.to_json())
 
 
-async def edit_product(product_id, title=None, description=None, cost=None):
+async def edit_product(user_id, purchase_id, product_id, title=None, description=None, cost=None):
     """
     Редактирование продукта
 
@@ -210,5 +213,44 @@ async def edit_product(product_id, title=None, description=None, cost=None):
 
     :return: Response
     """
+    user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
+    if not purchase_data:
+        return user_data
 
-    return json_response({})
+    product_data = await Product.execute(Product.select().where(Product.id == product_id))
+    if not product_data:
+        return json_response({'error': 'Product not found'}, status=404)
+
+    product_data = purchase_data[0]
+
+    if cost and cost < 0:
+        return json_response({'error': 'Invalid cost'}, status=400)
+
+    was_set = []
+    if title:
+        product_data.title = title
+        was_set.append('title')
+
+    if description:
+        product_data.description = description
+        was_set.append('description')
+
+    if cost:
+        product_data.cost = cost
+        was_set.append('cost')
+
+    await Product.async_update(product_data)
+    return json_response({'was_set': was_set})
+
+
+async def delete_product(user_id, purchase_id, product_id):
+    user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
+    if not purchase_data:
+        return user_data
+
+    product_data = await Product.execute(Product.select().where(Product.id == product_id))
+    if not product_data:
+        return json_response({'error': 'Product not found'}, status=404)
+
+    await Product.objects.delete(product_data)
+    return json_response({'deleted': product_id})

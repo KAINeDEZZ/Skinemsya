@@ -5,9 +5,11 @@ from hashlib import sha256
 from hmac import HMAC
 from urllib.parse import urlencode
 
+from aiohttp.web import json_response
+
 import datetime
 
-from database import User
+from database import User, Purchase
 
 
 def is_valid(query: dict, sign, secret: str) -> bool:
@@ -46,3 +48,17 @@ def load_datetime(string_datetime):
         return datetime.datetime.strptime(string_datetime, '%Y-%m-%dT%H:%M')
     except ValueError:
         return False
+
+
+async def check_purchase_permission(user_id, purchase_id):
+    purchase_data = await Purchase.execute(Purchase.select().where(Purchase.id == purchase_id))
+    if not purchase_data:
+        return json_response({'error': 'Cant find purchase with this id'}, status=404),
+
+    purchase_data = purchase_data[0]
+    user_data = await get_user_data(user_id)
+
+    if purchase_data.owner != user_data:
+        return json_response({'error': 'No permissions'}, status=400),
+
+    return purchase_data, user_data
