@@ -50,7 +50,7 @@ class Core:
                 return web.json_response({'error': 'Invalid params'}, status=400)
 
             user_id = int(user_id)
-            user_data = await User.objects.execute(User.select().where(User.user_id == user_id))
+            user_data = await User.request(user_id=user_id)
 
             if not user_data:
                 return web.json_response({'error': 'Invalid params'}, status=400)

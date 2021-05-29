@@ -40,7 +40,7 @@ def create_token(length):
 
 
 async def get_user_data(user_id):
-    return (await User.objects.execute(User.select().where(User.user_id == int(user_id))))[0]
+    return (await User.request(user_id=int(user_id)))[0]
 
 
 def load_datetime(string_datetime):
@@ -51,7 +51,7 @@ def load_datetime(string_datetime):
 
 
 async def check_purchase_permission(user_id, purchase_id):
-    purchase_data = await Purchase.execute(Purchase.select().where(Purchase.id == purchase_id))
+    purchase_data = await Purchase.request(id=purchase_id)
     if not purchase_data:
         return json_response({'error': 'Cant find purchase with this id'}, status=404),
 

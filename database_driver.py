@@ -31,6 +31,31 @@ class AsyncModel(peewee.Model):
 
     objects = objects
 
+    @classmethod
+    async def request(cls, **kwargs):
+        nodes = []
+        for key, value in kwargs.items():
+            field = getattr(cls, key, None)
+            if not field:
+                raise UnknownModelField(cls.__name__, key)
+
+            nodes.append(field == value)
+
+        return await cls.execute(cls.select().where(*nodes))
+
+
+    @classmethod
+    async def async_create(cls, **query):
+        return await objects.create(cls, **query)
+
+    @classmethod
+    async def execute(cls, selector):
+        return await cls.objects.execute(selector)
+
+    @classmethod
+    async def async_update(cls, obj, only=None):
+        return await cls.objects.update(obj, only=only)
+
     def to_json(self):
         data = {}
         for key in self.__data__:
@@ -47,17 +72,10 @@ class AsyncModel(peewee.Model):
         return data
 
 
-    def jija(self):
-        print()
+class UnknownModelField(Exception):
+    def __init__(self, model, field):
+        self.model = model
+        self.field = field
 
-    @classmethod
-    async def async_create(cls, **query):
-        return await objects.create(cls, **query)
-
-    @classmethod
-    async def execute(cls, selector):
-        return await cls.objects.execute(selector)
-
-    @classmethod
-    async def async_update(cls, obj, only=None):
-        return await cls.objects.update(obj, only=only)
+    def __str__(self):
+        return f'{self.model} has no {self.field} field'

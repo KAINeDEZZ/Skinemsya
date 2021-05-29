@@ -19,7 +19,7 @@ async def auth(request, sign, vk_user_id):
     if status:
         token = utils.create_token(50)
         now = datetime.datetime.now()
-        user_data = await User.objects.execute(User.select().where(User.user_id == vk_user_id))
+        user_data = await User.request(user_id=vk_user_id)
 
         if not user_data:
             await User.async_create(
@@ -52,7 +52,7 @@ async def get_all_purchases(user_id):
     return json_response({})
 
 
-async def get_purchase(purchase_id):
+async def get_purchase(user_id, purchase_id):
     """
     Получение данных о закупки
 
@@ -88,7 +88,7 @@ async def create_purchase(user_id, title, billing_at, ending_at, description=Non
     now = datetime.datetime.now().replace(microsecond=0)
 
     if not (now < billing_at < ending_at):
-        return json_response({'error': 'Invalid date'}, status=400)
+        return json_response({'error': 'Invalid datetime'}, status=400)
 
     user_data = await utils.get_user_data(user_id)
     purchase_data = await Purchase.async_create(
@@ -217,7 +217,7 @@ async def edit_product(user_id, purchase_id, product_id, title=None, description
     if not purchase_data:
         return user_data
 
-    product_data = await Product.execute(Product.select().where(Product.id == product_id))
+    product_data = await Product.request(id=product_id)
     if not product_data:
         return json_response({'error': 'Product not found'}, status=404)
 
@@ -248,7 +248,7 @@ async def delete_product(user_id, purchase_id, product_id):
     if not purchase_data:
         return user_data
 
-    product_data = await Product.execute(Product.select().where(Product.id == product_id))
+    product_data = await Product.request(id=product_id)
     if not product_data:
         return json_response({'error': 'Product not found'}, status=404)
 
