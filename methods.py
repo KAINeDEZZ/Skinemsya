@@ -48,8 +48,13 @@ async def get_all_purchases(user_id):
 
     :return: Response
     """
+    user_data = await User.objects.get(User, user_id=user_id)
 
-    return json_response({})
+    purchases = []
+    for purchase in await Purchase.execute(user_data.purchase.order_by(Purchase.status)):
+        purchases.append(purchase.to_json())
+
+    return json_response(purchases)
 
 
 async def get_purchase(user_id, purchase_id):
@@ -61,7 +66,15 @@ async def get_purchase(user_id, purchase_id):
 
     :return: Response
     """
-    return json_response({})
+    purchase_data = await Purchase.request(id=purchase_id)
+    if not purchase_data:
+        return json_response({'error': 'Purchase not found'}, status=404)
+
+    purchase_data = purchase_data[0]
+    if purchase_data.owner.user_id != int(user_id):
+        return json_response({'error': 'No permissions'}, status=400)
+
+    return json_response(purchase_data.to_json())
 
 
 async def create_purchase(user_id, title, billing_at, ending_at, description=None):
@@ -101,6 +114,7 @@ async def create_purchase(user_id, title, billing_at, ending_at, description=Non
         ending_at=ending_at,
     )
 
+    purchase_data.users.add(user_data)
     return json_response(purchase_data.to_json())
 
 

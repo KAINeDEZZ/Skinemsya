@@ -1,6 +1,6 @@
 import peewee
 
-from database_driver import AsyncModel
+from database_driver import AsyncModel, database
 import utils
 
 
@@ -24,7 +24,7 @@ class Purchase(AsyncModel):
             (2, FINIS)
         )
 
-    owner = peewee.ForeignKeyField(User)
+    owner = peewee.ForeignKeyField(User, backref='owner')
     users = peewee.ManyToManyField(User, backref='purchase')
     status = peewee.CharField(max_length=20, choices=Status.CHOOSES, default=Status.PICK)
 
@@ -69,9 +69,10 @@ class UserBill(AsyncModel):
         return f'{self.user} {self.status}'
 
 
-User.create_table()
-Purchase.create_table()
-Product.create_table()
-UserBill.create_table()
-
-# User.create(user_id='1234567890', token='qwerty12345')
+database.create_tables([
+    User,
+    Purchase,
+    Purchase.users.get_through_model(),
+    Product,
+    UserBill,
+])

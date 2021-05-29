@@ -41,8 +41,8 @@ class AsyncModel(peewee.Model):
 
             nodes.append(field == value)
 
-        return await cls.execute(cls.select().where(*nodes))
-
+        selector = cls.select().where(*nodes) if nodes else cls.select()
+        return await cls.execute(selector)
 
     @classmethod
     async def async_create(cls, **query):
