@@ -45,6 +45,10 @@ class AsyncModel(peewee.Model):
         return await cls.execute(selector)
 
     @classmethod
+    async def async_get(cls, **query):
+        return await objects.get(cls, **query)
+
+    @classmethod
     async def async_create(cls, **query):
         return await objects.create(cls, **query)
 

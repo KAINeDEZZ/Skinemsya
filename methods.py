@@ -186,7 +186,6 @@ async def get_products(user_id, purchase_id):
     return json_response(products_data)
 
 
-
 async def create_product(user_id, purchase_id, title, cost, description=None):
     """
     Создание продукта
@@ -214,7 +213,7 @@ async def create_product(user_id, purchase_id, title, cost, description=None):
         title=title,
         description=description,
         cost=cost,
-        purchase=purchase_data
+        purchase_id=purchase_data.id
     )
 
     return json_response({
