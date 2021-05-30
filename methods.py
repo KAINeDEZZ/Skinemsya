@@ -177,6 +177,16 @@ async def delete_purchase(user_id, purchase_id):
     return json_response({'deleted_id': purchase_id})
 
 
+async def get_products(user_id, purchase_id):
+    user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
+    if not purchase_data:
+        return user_data
+
+    products_data = list(obj.to_json() for obj in await Product.request(purchase=purchase_data))
+    return json_response(products_data)
+
+
+
 async def create_product(user_id, purchase_id, title, cost, description=None):
     """
     Создание продукта
