@@ -53,12 +53,12 @@ def load_datetime(string_datetime):
 async def check_purchase_permission(user_id, purchase_id):
     purchase_data = await Purchase.request(id=purchase_id)
     if not purchase_data:
-        return json_response({'error': 'Cant find purchase with this id'}, status=404),
+        return json_response({'error': 'Cant find purchase with this id'}, status=404), None
 
     purchase_data = purchase_data[0]
     user_data = await get_user_data(user_id)
 
     if purchase_data.owner != user_data:
-        return json_response({'error': 'No permissions'}, status=400),
+        return json_response({'error': 'No permissions'}, status=400), None
 
     return purchase_data, user_data

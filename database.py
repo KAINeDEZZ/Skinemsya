@@ -76,3 +76,11 @@ database.create_tables([
     Product,
     UserBill,
 ])
+
+# database.drop_tables([
+#     User,
+#     Purchase,
+#     Purchase.users.get_through_model(),
+#     Product,
+#     UserBill,
+# ])

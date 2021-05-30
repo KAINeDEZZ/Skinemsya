@@ -196,6 +196,7 @@ async def create_product(user_id, purchase_id, title, cost, description=None):
     if not purchase_data:
         return user_data
 
+    cost = int(cost)
     if cost < 0:
         return json_response({'error': 'Invalid cost'}, status=400)
 
@@ -206,7 +207,9 @@ async def create_product(user_id, purchase_id, title, cost, description=None):
         purchase=purchase_data
     )
 
-    return json_response(product_data.to_json())
+    return json_response({
+        # TODO
+    })
 
 
 async def edit_product(user_id, purchase_id, product_id, title=None, description=None, cost=None):

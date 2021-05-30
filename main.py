@@ -58,7 +58,6 @@ class Core:
             user_data = user_data[0]
             if user_data.token != token:
                 return web.json_response({'error': 'Invalid token'}, status=400)
-
         return await handler(request)
 
     @staticmethod
