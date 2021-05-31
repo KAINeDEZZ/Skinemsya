@@ -41,6 +41,14 @@ class Purchase(AsyncModel):
         return f'{self.owner} {self.title} {self.status}'
 
 
+class Invites(AsyncModel):
+    user_id = peewee.IntegerField(User)
+    purchase = peewee.ForeignKeyField(Purchase, backref='invite')
+
+    def __str__(self):
+        return f'{self.user_id} {self.purchase}'
+
+
 class Product(AsyncModel):
     title = peewee.CharField(max_length=30)
     description = peewee.CharField(max_length=100, null=True)
@@ -69,18 +77,21 @@ class UserBill(AsyncModel):
         return f'{self.user} {self.status}'
 
 
+database.drop_tables([
+    # Invites
+    # User,
+    # Purchase,
+    # Purchase.users.get_through_model(),
+    # Product,
+    # UserBill,
+])
+
+
 database.create_tables([
     User,
     Purchase,
     Purchase.users.get_through_model(),
+    Invites,
     Product,
     UserBill,
 ])
-
-# database.drop_tables([
-#     User,
-#     Purchase,
-#     Purchase.users.get_through_model(),
-#     Product,
-#     UserBill,
-# ])

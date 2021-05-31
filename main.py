@@ -58,6 +58,10 @@ class Core:
             user_data = user_data[0]
             if user_data.token != token:
                 return web.json_response({'error': 'Invalid token'}, status=400)
+
+            user_data.last_active = datetime.datetime.now()
+            await User.async_update(user_data)
+
         return await handler(request)
 
     @staticmethod

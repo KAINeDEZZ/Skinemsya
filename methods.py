@@ -5,7 +5,7 @@ import datetime
 import json
 
 import utils
-from database import User, Purchase, Product
+from database import User, Purchase, Product, Invites
 
 
 async def auth(request, sign, vk_user_id):
@@ -27,9 +27,11 @@ async def auth(request, sign, vk_user_id):
                 token=token,
                 last_active=now
             )
+
         else:
             user_data = user_data[0]
             user_data.token = token
+            user_data.last_active = now
 
             await User.async_update(user_data)
 
@@ -175,6 +177,94 @@ async def delete_purchase(user_id, purchase_id):
     await Purchase.objects.delete(purchase_data)
 
     return json_response({'deleted_id': purchase_id})
+
+
+async def get_members(purchase_id):
+    purchase_data = await Purchase.request(id=purchase_id)
+    if not purchase_data:
+        return json_response({'error': 'Cant find purchase with this id'}, status=404)
+
+    purchase_data = purchase_data[0]
+    members = [member.user_id for member in await User.execute(purchase_data.users)]
+    return json_response(members)
+
+
+async def delete_member(user_id, purchase_id, target_id):
+    user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
+    if not purchase_data:
+        return user_data
+
+    target_data = await User.request(user_id=target_id)
+    if not target_data:
+        return json_response({'error': 'Cant find user with this id'}, status=404)
+    target_data = target_data[0]
+
+    if not await User.execute(purchase_data.users.where(User.user_id==target_id)):
+        return json_response({'error': 'Cant find target with this id in purchase'}, status=404)
+
+    purchase_data.users.remove(target_data)
+    return json_response({'deleted': target_id})
+
+
+async def get_invites(user_id):
+    invites = [invite.purchase.to_json() for invite in await Invites.request(user_id=user_id)]
+    return json_response(invites)
+
+
+async def create_invite(user_id, purchase_id, target_id):
+    user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
+    if not purchase_data:
+        return user_data
+
+    await Invites.async_create(user_id=target_id, purchase=purchase_data)
+    return json_response({'invited': {'user_id': target_id, 'purchase_id': purchase_id}})
+
+
+async def delete_invite(user_id, purchase_id, target_id):
+    user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
+    if not purchase_data:
+        return user_data
+
+    invite_data = await Invites.request(user_id=target_id, purchase=purchase_data)
+    if not invite_data:
+        return json_response({'error': 'Cant find invite with this id'}, status=404)
+    invite_data = invite_data[0]
+
+    await Invites.objects.delete(invite_data)
+    return json_response({'deleted': invite_data.id})
+
+
+async def confirm_invite(user_id, purchase_id):
+    purchase_data = await Purchase.request(id=purchase_id)
+    if not purchase_data:
+        return json_response({'error': 'Cant find purchase with this id'}, status=404)
+    purchase_data = purchase_data[0]
+
+    invite_data = await Invites.request(user_id=user_id, purchase=purchase_data)
+    if not invite_data:
+        return json_response({'error': 'Cant find invite for u'}, status=404)
+    invite_data = invite_data[0]
+
+    user_data = await User.objects.get(User, user_id=user_id)
+    purchase_data.users.add(user_data)
+    await Invites.objects.delete(invite_data)
+
+    return json_response({'added_to': purchase_id})
+
+
+async def refuse_invite(user_id, purchase_id):
+    purchase_data = await Purchase.request(id=purchase_id)
+    if not purchase_data:
+        return json_response({'error': 'Cant find purchase with this id'}, status=404)
+    purchase_data = purchase_data[0]
+
+    invite_data = await Invites.request(user_id=user_id, purchase=purchase_data)
+    if not invite_data:
+        return json_response({'error': 'Cant find invite with this id'}, status=404)
+    invite_data = invite_data[0]
+
+    await Invites.objects.delete(invite_data)
+    return json_response({'refused': invite_data.id})
 
 
 async def get_products(user_id, purchase_id):
