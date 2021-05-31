@@ -3,7 +3,7 @@ from methods import *
 routes = [
     get('/auth/', auth),
 
-    get('/get_all_purchases/', get_all_purchases),
+    get('/purchase/get_all/', get_all_purchases),
 
     get('/purchase/get/', get_purchase),
     get('/purchase/create/', create_purchase),
@@ -18,9 +18,9 @@ routes = [
     get('/invites/delete/', delete_invite),
     get('/invites/confirm/', confirm_invite),
     get('/invites/refuse/', refuse_invite),
-
-    get('/get_products/', get_products),
-    get('/create_product/', create_product),
-    get('/edit_product/', edit_product)
+#
+#     get('/get_products/', get_products),
+#     get('/create_product/', create_product),
+#     get('/edit_product/', edit_product)
 ]
 
