@@ -1,5 +1,4 @@
 aiohttp
-peewee
-peewee-async
-aiopg
 aiofile
+tortoise-orm
+asyncpg

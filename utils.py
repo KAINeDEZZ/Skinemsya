@@ -9,7 +9,7 @@ from aiohttp.web import json_response
 
 import datetime
 
-from database import User, Purchase
+from models import User, Purchase
 
 
 def is_valid(query: dict, sign, secret: str) -> bool:
@@ -37,29 +37,3 @@ def create_token(length):
         symbols.append(chr(symbol_code))
 
     return ''.join(symbols)
-
-
-async def get_user_data(user_id):
-    return (await User.request(user_id=int(user_id)))[0]
-
-
-def load_datetime(string_datetime):
-    try:
-        return datetime.datetime.strptime(string_datetime, '%Y-%m-%dT%H:%M')
-    except ValueError:
-        return False
-
-
-async def check_purchase_permission(user_id, purchase_id):
-    purchase_data = await Purchase.request(id=int(purchase_id))
-
-    if not purchase_data:
-        return json_response({'error': 'Cant find purchase with this id'}, status=404), None
-
-    purchase_data = purchase_data[0]
-    user_data = await get_user_data(user_id)
-
-    if purchase_data.owner != user_data:
-        return json_response({'error': 'No permissions'}, status=400), None
-
-    return user_data, purchase_data
