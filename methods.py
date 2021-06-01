@@ -5,7 +5,7 @@ import datetime
 import json
 
 import utils
-from models import User, Purchase, Invites
+from models import User, Purchase, Invites, Product
 
 
 async def auth(request, sign, vk_user_id):
@@ -308,53 +308,45 @@ async def refuse_invite(user_id, invite_id):
     return json_response({'invite_id': invite_id})
 
 
-#
-#
-# async def get_products(user_id, purchase_id):
-#     user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
-#     if not purchase_data:
-#         return user_data
-#
-#     products_data = list(obj.to_json() for obj in await Product.request(purchase=purchase_data))
-#     return json_response(products_data)
-#
-#
-# async def create_product(user_id, purchase_id, title, cost, description=None):
-#     """
-#     Создание продукта
-#
-#     :param title:
-#     :type title: str
-#
-#     :param description:
-#     :type description: str
-#
-#     :param cost: Цена продукта
-#     :type cost: int
-#
-#     :return: Response
-#     """
-#     user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
-#     if not purchase_data:
-#         return user_data
-#
-#     cost = int(cost)
-#     if cost < 0:
-#         return json_response({'error': 'Invalid cost'}, status=400)
-#
-#     product_data = await Product.async_create(
-#         title=title,
-#         description=description,
-#         cost=cost,
-#         purchase_id=purchase_data.id
-#     )
-#
-#     return json_response({
-#         # TODO
-#     })
-#
-#
+async def get_all_products(purchase_data):
+    products = [product for product in await purchase_data.products.all()]
+    print(products)
+
+    return json_response({})
+
+
+async def create_product(purchase_data, title, cost, description=None):
+    """
+    Создание продукта
+
+    :param title:
+    :type title: str
+
+    :param description:
+    :type description: str
+
+    :param cost: Цена продукта
+    :type cost: int
+
+    :return: Response
+    """
+
+    cost = int(cost)
+    if cost < 0:
+        return json_response({'error': 'Invalid cost'}, status=400)
+
+    product_data = await Product.create(
+        title=title,
+        description=description,
+        cost=cost,
+        purchase_id=purchase_data.id
+    )
+
+    return json_response({'product_id': product_data.pk})
+
+
 # async def edit_product(user_id, purchase_id, product_id, title=None, description=None, cost=None):
+#     #TODO
 #     """
 #     Редактирование продукта
 #
@@ -372,6 +364,7 @@ async def refuse_invite(user_id, invite_id):
 #
 #     :return: Response
 #     """
+#
 #     user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
 #     if not purchase_data:
 #         return user_data
@@ -400,16 +393,13 @@ async def refuse_invite(user_id, invite_id):
 #
 #     await Product.async_update(product_data)
 #     return json_response({'was_set': was_set})
-#
-#
-# async def delete_product(user_id, purchase_id, product_id):
-#     user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
-#     if not purchase_data:
-#         return user_data
-#
-#     product_data = await Product.request(id=product_id)
-#     if not product_data:
-#         return json_response({'error': 'Product not found'}, status=404)
-#
-#     await Product.objects.delete(product_data)
-#     return json_response({'deleted': product_id})
+
+
+async def delete_product(purchase_data, product_id):
+    product_data = await purchase_data.products.filter(pk=product_id).first()
+
+    if not product_data:
+        return json_response({'error': 'Product not found'}, status=404)
+
+    await product_data.delete()
+    return json_response({'product_id': product_id})

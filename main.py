@@ -128,7 +128,7 @@ class Core:
                 param_value = params.get(param.name) or request.middleware_data.get(param.name)
 
                 if param.default is inspect.Parameter.empty and param_value is None:
-                    print(param.name)
+                    print(param.name) # TODO
                     return web.json_response({'error': 'Invalid params'}, status=400)
 
                 elif param_value is not None:

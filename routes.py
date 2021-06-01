@@ -8,7 +8,7 @@ routes = [
     get('/purchase/get/', get_purchase),
     get('/purchase/is_owner/', is_purchase_owner),
     get('/purchase/create/', create_purchase),
-    get('/purchase/edit/', edit_purchase),
+    # get('/purchase/edit/', edit_purchase),
     get('/purchase/delete/', delete_purchase),
 
     get('/members/get/', get_members),
@@ -22,9 +22,10 @@ routes = [
     get('/invites/delete/', delete_invite),
     get('/invites/confirm/', confirm_invite),
     get('/invites/refuse/', refuse_invite),
-#
-#     get('/get_products/', get_products),
-#     get('/create_product/', create_product),
-#     get('/edit_product/', edit_product)
+
+    get('/products/get_all/', get_all_products),
+    get('/products/create/', create_product),
+    # get('/products/edit/', edit_product),
+    get('/products/delete/', delete_product)
 ]
 

@@ -37,6 +37,8 @@ class Purchase(Model):
     invite_key = fields.CharField(max_length=100)
     invite: fields.ForeignKeyRelation['Invites']
 
+    products: fields.ForeignKeyRelation['Product']
+
     def __str__(self):
         return f'{self.owner} {self.title} {self.status}'
 
@@ -47,19 +49,19 @@ class Invites(Model):
 
     def __str__(self):
         return f'{self.user_id} {self.purchase}'
-#
-#
-# class Product(database_driver.AsyncModel):
-#     title = peewee.CharField(max_length=30)
-#     description = peewee.CharField(max_length=100, null=True)
-#     cost = peewee.IntegerField()
-#
-#     purchase = peewee.ForeignKeyField(Purchase, backref='products')
-#
-#     def __str__(self):
-#         return f'{self.title} {self.cost}'
-#
-#
+
+
+class Product(Model):
+    title = fields.CharField(max_length=30)
+    description = fields.CharField(max_length=100, null=True)
+    cost = fields.IntField()
+
+    purchase: fields.ForeignKeyRelation[Purchase] = fields.ForeignKeyField('models.Purchase', backref='products')
+
+    def __str__(self):
+        return f'{self.title} {self.cost}'
+
+
 # class UserBill(database_driver.AsyncModel):
 #     class Status:
 #         WAIT = 'wait'
@@ -75,7 +77,7 @@ class Invites(Model):
 #
 #     def __str__(self):
 #         return f'{self.user} {self.status}'
-#
+# #
 #
 # database_driver.database.drop_tables([
 #     # Invites
