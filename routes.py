@@ -14,6 +14,7 @@ routes = [
     get('/members/delete/', delete_member),
 
     get('/invites/get/', get_invites),
+    get('/invites/get_purchase/', get_purchase_invites),
     get('/invites/create/', create_invite),
     get('/invites/delete/', delete_invite),
     get('/invites/confirm/', confirm_invite),

@@ -68,7 +68,7 @@ async def get_all_purchases(user_data):
     return json_response(purchases)
 
 
-async def get_purchase(purchase_data):
+async def get_purchase(purchase_data, user_data):
     """
     Получение данных о закупки
 
@@ -78,6 +78,7 @@ async def get_purchase(purchase_data):
     :return: Response
     """
     return json_response({
+        'is_owner': 1 if purchase_data.owner == user_data else 0,
         'title': purchase_data.title,
         'description': purchase_data.description,
         'status': purchase_data.status,
@@ -217,6 +218,14 @@ async def get_invites(user_id):
     return json_response(invites)
 
 
+async def get_purchase_invites(purchase_data, is_owner):
+    if not is_owner:
+        return json_response({'error': 'No permissions'}, status=400)
+
+    invites = [invite.user_id for invite in await purchase_data.invite.all()]
+    return json_response(invites)
+
+
 async def create_invite(purchase_data, is_owner, target_id):
     if not is_owner:
         return json_response({'error': 'No permissions'}, status=400)
@@ -252,7 +261,7 @@ async def confirm_invite(user_id, user_data, invite_id):
 
     await invite_data.purchase.members.add(user_data)
     await invite_data.delete()
-    return json_response({'added_to': invite_data.pk})
+    return json_response({'added_to': invite_data.purchase.pk})
 
 
 async def refuse_invite(user_id, invite_id):
@@ -262,6 +271,8 @@ async def refuse_invite(user_id, invite_id):
 
     await invite_data.delete()
     return json_response({'refused': invite_id})
+
+
 #
 #
 # async def get_products(user_id, purchase_id):
