@@ -190,7 +190,7 @@ async def delete_purchase(purchase_data, is_owner):
 
 
 async def get_members(purchase_data):
-    members = [member.pk for member in await purchase_data.members.all()]
+    members = [member.user_id for member in await purchase_data.members.all()]
     return json_response(members)
 
 
