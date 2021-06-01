@@ -89,8 +89,8 @@ async def get_purchase(purchase_data, user_data):
     })
 
 
-async def is_purchase_admin(is_admin):
-    return json_response({'is_admin': is_admin})
+async def is_purchase_owner(is_owner):
+    return json_response({'is_admin': is_owner})
 
 
 async def create_purchase(user_data, title, billing_at, ending_at, description=None):

@@ -6,7 +6,7 @@ routes = [
     get('/purchase/get_all/', get_all_purchases),
 
     get('/purchase/get/', get_purchase),
-    get('/purchase/is_admin/', is_purchase_admin),
+    get('/purchase/is_owner/', is_purchase_owner),
     get('/purchase/create/', create_purchase),
     get('/purchase/edit/', edit_purchase),
     get('/purchase/delete/', delete_purchase),
