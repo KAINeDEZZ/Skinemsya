@@ -89,6 +89,10 @@ async def get_purchase(purchase_data, user_data):
     })
 
 
+async def is_purchase_admin(is_admin):
+    return json_response({'is_admin': is_admin})
+
+
 async def create_purchase(user_data, title, billing_at, ending_at, description=None):
     """
     Создание закупки
@@ -240,6 +244,26 @@ async def create_invite(purchase_data, is_owner, target_id):
     return json_response({'invited': {'user_id': target_id, 'purchase_id': purchase_data.pk}})
 
 
+async def create_invite_row(purchase_data, is_owner, targets_ids):
+    if not is_owner:
+        return json_response({'error': 'No permissions'}, status=400)
+
+    purchase_users = set(member.user_id for member in await purchase_data.members.all())
+    purchase_users.update(set(invite.user_id for invite in await Invites.filter(purchase=purchase_data)))
+
+    created_invites = []
+    for target_id in targets_ids.split(', '):
+        target_id = int(target_id)
+
+        if not purchase_users.isdisjoint({target_id}):
+            continue
+
+        await Invites.create(user_id=target_id, purchase=purchase_data)
+        created_invites.append(target_id)
+
+    return json_response({'invited_ids': created_invites})
+
+
 async def delete_invite(purchase_data, is_owner, target_id):
     if not is_owner:
         return json_response({'error': 'No permissions'}, status=400)
@@ -251,7 +275,7 @@ async def delete_invite(purchase_data, is_owner, target_id):
     await invite_data.delete()
 
     await invite_data.delete()
-    return json_response({'deleted': invite_data.pk})
+    return json_response({'invite_id': invite_data.pk})
 
 
 async def confirm_invite(user_id, user_data, invite_id):
@@ -261,7 +285,7 @@ async def confirm_invite(user_id, user_data, invite_id):
 
     await invite_data.purchase.members.add(user_data)
     await invite_data.delete()
-    return json_response({'added_to': invite_data.purchase.pk})
+    return json_response({'purchase_id': invite_data.purchase.pk})
 
 
 async def refuse_invite(user_id, invite_id):
@@ -270,7 +294,7 @@ async def refuse_invite(user_id, invite_id):
         return json_response({'error': 'Invite doesnt exist'}, status=400)
 
     await invite_data.delete()
-    return json_response({'refused': invite_id})
+    return json_response({'invite_id': invite_id})
 
 
 #
