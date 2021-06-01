@@ -90,7 +90,7 @@ async def get_purchase(purchase_data, user_data):
 
 
 async def is_purchase_owner(is_owner):
-    return json_response({'is_admin': is_owner})
+    return json_response({'is_owner': is_owner})
 
 
 async def create_purchase(user_data, title, billing_at, ending_at, description=None):
@@ -198,16 +198,27 @@ async def get_members(purchase_data):
     return json_response(members)
 
 
-async def delete_member(purchase_data, is_owner, target_id):
+async def delete_member(user_id, purchase_data, is_owner, target_id):
     if not is_owner:
         return json_response({'error': 'No permissions'}, status=400)
 
-    target_data = await purchase_data.members.filter(pk=target_id).first()
+    if is_owner and user_id == target_id:
+        return json_response({'error': 'Cant self delete'}, status=400)
+
+    target_data = await purchase_data.members.filter(user_id=target_id).first()
     if not target_data:
         return json_response({'error': 'Cant find user with this id'}, status=404)
 
     await purchase_data.members.remove(target_data)
     return json_response({'deleted': target_id})
+
+
+async def member_leave(user_data, purchase_data, is_owner):
+    if is_owner:
+        return json_response({'error': 'Cant leave from your purchase'}, status=400)
+
+    await purchase_data.members.remove(user_data)
+    return json_response({'purchase_id': purchase_data.pk})
 
 
 async def get_invites(user_id):
@@ -261,7 +272,7 @@ async def create_invite_row(purchase_data, is_owner, targets_ids):
         await Invites.create(user_id=target_id, purchase=purchase_data)
         created_invites.append(target_id)
 
-    return json_response({'invited_ids': created_invites})
+    return json_response(created_invites)
 
 
 async def delete_invite(purchase_data, is_owner, target_id):

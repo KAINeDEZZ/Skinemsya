@@ -13,6 +13,7 @@ routes = [
 
     get('/members/get/', get_members),
     get('/members/delete/', delete_member),
+    get('/members/leave/', member_leave),
 
     get('/invites/get/', get_invites),
     get('/invites/get_purchase/', get_purchase_invites),
