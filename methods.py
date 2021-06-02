@@ -309,10 +309,16 @@ async def refuse_invite(user_id, invite_id):
 
 
 async def get_all_products(purchase_data):
-    products = [product for product in await purchase_data.products.all()]
-    print(products)
+    products = []
+    for product in await purchase_data.products.all():
+        products.append({
+            'id': product.pk,
+            'title': product.title,
+            'description': product.description,
+            'cost':  product.cost
+        })
 
-    return json_response({})
+    return json_response(products)
 
 
 async def create_product(purchase_data, title, cost, description=None):
