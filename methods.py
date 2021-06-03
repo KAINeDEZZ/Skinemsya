@@ -4,6 +4,7 @@ import aiofile
 import datetime
 import json
 
+from tortoise.functions import Count
 from tortoise.query_utils import Prefetch
 
 import utils
@@ -447,3 +448,33 @@ async def bill_pick(user_data, purchase_data, product_id, product_status):
         await bill_data.products.remove(product_data)
 
     return json_response({'product_id': product_id, 'product_status': product_status})
+
+
+async def get_bill(purchase_data, user_data):
+    products_data = await Product.filter(purchase=purchase_data).annotate(bills_count=Count('bills__id'))
+    bill_products = set(
+        await Product.filter(purchase=purchase_data, bills__user=user_data).values_list('id', flat=True)
+    )
+
+    products = []
+    bill = 0
+    for product in products_data:
+        if not bill_products.isdisjoint({product.pk}):
+            bills_count = getattr(product, 'bills_count')
+            user_cost = product.cost / bills_count
+
+            if not user_cost.is_integer():
+                user_cost = user_cost + 1
+
+            user_cost = int(user_cost)
+            bill += user_cost
+
+            products.append({
+                'title': product.title,
+                'description': product.description,
+                'cost': product.cost,
+                'bills_count': bills_count,
+                'user_cost': user_cost
+            })
+
+    return json_response({'bill': bill, 'products': products})

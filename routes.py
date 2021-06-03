@@ -28,6 +28,7 @@ routes = [
     # get('/products/edit/', edit_product),
     get('/products/delete/', delete_product),
 
-    get('/bill/pick/', bill_pick)
+    get('/bill/pick/', bill_pick),
+    get('/bill/get/', get_bill)
 ]
 
