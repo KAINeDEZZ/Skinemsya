@@ -132,11 +132,19 @@ class Core:
                     return web.json_response({'error': 'Invalid params'}, status=400)
 
                 elif param_value is not None:
-                    if param_value == 'True':
-                        kwargs[param.name] = True
+                    if type(param_value) is str:
 
-                    elif param_value == 'False':
-                        kwargs[param.name] = False
+                        if param_value.isdigit():
+                            kwargs[param.name] = int(param_value)
+
+                        elif param_value.lower() == 'true':
+                            kwargs[param.name] = True
+
+                        elif param_value.lower() == 'false':
+                            kwargs[param.name] = False
+
+                        else:
+                            kwargs[param.name] = param_value
 
                     else:
                         kwargs[param.name] = param_value

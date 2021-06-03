@@ -429,12 +429,14 @@ async def delete_product(purchase_data, product_id):
 
 
 async def bill_pick(user_data, purchase_data, product_id, product_status):
+    if type(product_status) is not bool:
+        return json_response({'error': 'Invalid status'}, status=400)
+
     product_data = await purchase_data.products.filter(pk=product_id).first()
     if not product_data:
         return json_response({'error': 'Product not found'}, status=404)
 
     bill_data = await purchase_data.bills.filter(user=user_data).first()
-
     if await product_data.bills.filter(pk=bill_data.pk).exists() == product_status:
         return json_response({'error': f'Status already {product_status}'}, status=400)
 
