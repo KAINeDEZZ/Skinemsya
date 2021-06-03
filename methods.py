@@ -270,6 +270,9 @@ async def create_invite_row(purchase_data, is_owner, targets_ids):
     purchase_users = set(member.user_id for member in await purchase_data.members.all())
     purchase_users.update(set(invite.user_id for invite in await Invites.filter(purchase=purchase_data)))
 
+    if type(targets_ids) is int:
+        targets_ids = str(targets_ids)
+
     created_invites = []
     for target_id in targets_ids.split(', '):
         target_id = int(target_id)
