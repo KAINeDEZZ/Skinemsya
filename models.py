@@ -4,12 +4,6 @@ from tortoise import fields
 import enum
 
 
-class PurchaseStatus(str, enum.Enum):
-    PICK = 'pick'
-    BILL = 'bill'
-    FINIS = 'finish'
-
-
 class User(Model):
     user_id = fields.IntField()
     token = fields.CharField(max_length=100)
@@ -17,9 +11,16 @@ class User(Model):
 
     owned_purchase: fields.ReverseRelation['Purchase']
     purchase: fields.ManyToManyRelation['Purchase']
+    bill: fields.ForeignKeyRelation['Bill']
 
     def __str__(self):
         return f'{self.user_id} {self.last_active}'
+
+
+class PurchaseStatus(str, enum.Enum):
+    PICK = 'pick'
+    BILL = 'bill'
+    FINIS = 'finish'
 
 
 class Purchase(Model):
@@ -38,6 +39,7 @@ class Purchase(Model):
     invite: fields.ForeignKeyRelation['Invites']
 
     products: fields.ForeignKeyRelation['Product']
+    bills: fields.ForeignKeyRelation['Bill']
 
     def __str__(self):
         return f'{self.owner} {self.title} {self.status}'
@@ -57,43 +59,23 @@ class Product(Model):
     cost = fields.IntField()
 
     purchase: fields.ForeignKeyRelation[Purchase] = fields.ForeignKeyField('models.Purchase', backref='products')
+    bills: fields.ManyToManyRelation['Bill']
 
     def __str__(self):
         return f'{self.title} {self.cost}'
 
 
-# class UserBill(database_driver.AsyncModel):
-#     class Status:
-#         WAIT = 'wait'
-#         SENT = 'sent'
-#         CONFIRM = 'confirm'
-#
-#         CHOOSES = (WAIT, SENT, CONFIRM)
-#
-#     products = peewee.ManyToManyField(Product, backref='user_bill')
-#     purchase = peewee.ForeignKeyField(Purchase, backref='user_bill')
-#     user = peewee.ForeignKeyField(User, backref='user_bill')
-#     status = peewee.CharField(max_length=20, choices=Status.CHOOSES, default=Status.WAIT)
-#
-#     def __str__(self):
-#         return f'{self.user} {self.status}'
-# #
-#
-# database_driver.database.drop_tables([
-#     # Invites
-#     # User,
-#     # Purchase,
-#     # Purchase.users.get_through_model(),
-#     # Product,
-#     # UserBill,
-# ])
-#
-#
-# database_driver.database.create_tables([
-#     User,
-#     Purchase,
-#     Purchase.users.get_through_model(),
-#     Invites,
-#     Product,
-#     UserBill,
-# ])
+class BillStatus(str, enum.Enum):
+    WAIT = 'wait'
+    SENT = 'sent'
+    CONFIRM = 'confirm'
+
+
+class Bill(Model):
+    products: fields.ManyToManyRelation[Product] = fields.ManyToManyField('models.Product', backref='bill')
+    purchase: fields.ForeignKeyRelation[Purchase] = fields.ForeignKeyField('models.Purchase', backref='bill')
+    user: fields.ForeignKeyRelation = fields.ForeignKeyField('models.User', backref='bill')
+    status = fields.CharEnumField(BillStatus, max_length=20, default=BillStatus.WAIT)
+
+    def __str__(self):
+        return f'{self.user} {self.status}'

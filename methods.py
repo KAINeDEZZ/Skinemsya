@@ -4,8 +4,10 @@ import aiofile
 import datetime
 import json
 
+from tortoise.query_utils import Prefetch
+
 import utils
-from models import User, Purchase, Invites, Product
+from models import User, Purchase, Invites, Product, Bill
 
 
 async def auth(request, sign, vk_user_id):
@@ -132,57 +134,62 @@ async def create_purchase(user_data, title, billing_at, ending_at, description=N
     )
 
     await purchase_data.members.add(user_data)
+    await Bill.create(
+        user=user_data,
+        purchase=purchase_data,
+    )
+
     return json_response({'created': purchase_data.pk})
 
 
-async def edit_purchase(user_id, purchase_id, title=None, description=None, billing_at=None, ending_at=None):
-    # TODO
-    """
-    Редактирование закупки
-
-    :param purchase_id:
-    :type purchase_id: int
-
-    :param title:
-    :type title: str
-
-    :param description:
-    :type description: str
-
-    :return: Response
-    """
-    user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
-    if not purchase_data:
-        return user_data
-
-    was_set = []
-    if title:
-        purchase_data.title = title
-        was_set.append('title')
-
-    if description:
-        purchase_data.description = description
-        was_set.append('description')
-
-    if billing_at or ending_at:
-        billing_at = utils.load_datetime(billing_at)
-        ending_at = utils.load_datetime(ending_at)
-
-        if (billing_at and ending_at and not purchase_data.start_at < billing_at < ending_at) or \
-                (billing_at and not purchase_data.start_at < billing_at) or \
-                (ending_at and not purchase_data.start_at < ending_at):
-            return json_response({'error': 'Invalid datetime'}, status=400)
-
-        if billing_at:
-            purchase_data.billing_at = billing_at
-            was_set.append('billing_at')
-
-        if ending_at:
-            purchase_data.ending_at = ending_at
-            was_set.append('ending_at')
-
-    await Purchase.async_update(purchase_data)
-    return json_response({'was_set': was_set})
+# async def edit_purchase(user_id, purchase_id, title=None, description=None, billing_at=None, ending_at=None):
+#     # TODO
+#     """
+#     Редактирование закупки
+#
+#     :param purchase_id:
+#     :type purchase_id: int
+#
+#     :param title:
+#     :type title: str
+#
+#     :param description:
+#     :type description: str
+#
+#     :return: Response
+#     """
+#     user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
+#     if not purchase_data:
+#         return user_data
+#
+#     was_set = []
+#     if title:
+#         purchase_data.title = title
+#         was_set.append('title')
+#
+#     if description:
+#         purchase_data.description = description
+#         was_set.append('description')
+#
+#     if billing_at or ending_at:
+#         billing_at = utils.load_datetime(billing_at)
+#         ending_at = utils.load_datetime(ending_at)
+#
+#         if (billing_at and ending_at and not purchase_data.start_at < billing_at < ending_at) or \
+#                 (billing_at and not purchase_data.start_at < billing_at) or \
+#                 (ending_at and not purchase_data.start_at < ending_at):
+#             return json_response({'error': 'Invalid datetime'}, status=400)
+#
+#         if billing_at:
+#             purchase_data.billing_at = billing_at
+#             was_set.append('billing_at')
+#
+#         if ending_at:
+#             purchase_data.ending_at = ending_at
+#             was_set.append('ending_at')
+#
+#     await Purchase.async_update(purchase_data)
+#     return json_response({'was_set': was_set})
 
 
 async def delete_purchase(purchase_data, is_owner):
@@ -295,6 +302,11 @@ async def confirm_invite(user_id, user_data, invite_id):
         return json_response({'error': 'Invite doesnt exist'}, status=400)
 
     await invite_data.purchase.members.add(user_data)
+    await Bill.create(
+        user=user_data,
+        purchase=invite_data.purchase,
+    )
+
     await invite_data.delete()
     return json_response({'purchase_id': invite_data.purchase.pk})
 
@@ -308,14 +320,19 @@ async def refuse_invite(user_id, invite_id):
     return json_response({'invite_id': invite_id})
 
 
-async def get_all_products(purchase_data):
+async def get_all_products(user_data, purchase_data):
+    picked_products = set()
+    for bill_products in await Product.filter(bills__user=user_data, bills__purchase=purchase_data):
+        picked_products.add(bill_products.pk)
+
     products = []
     for product in await purchase_data.products.all():
         products.append({
             'id': product.pk,
             'title': product.title,
             'description': product.description,
-            'cost':  product.cost
+            'cost':  product.cost,
+            'picked': not picked_products.isdisjoint({product.pk})
         })
 
     return json_response(products)
@@ -409,3 +426,22 @@ async def delete_product(purchase_data, product_id):
 
     await product_data.delete()
     return json_response({'product_id': product_id})
+
+
+async def bill_pick(user_data, purchase_data, product_id, product_status):
+    product_data = await purchase_data.products.filter(pk=product_id).first()
+    if not product_data:
+        return json_response({'error': 'Product not found'}, status=404)
+
+    bill_data = await purchase_data.bills.filter(user=user_data).first()
+
+    if await product_data.bills.filter(pk=bill_data.pk).exists() == product_status:
+        return json_response({'error': f'Status already {product_status}'}, status=400)
+
+    if product_status:
+        await bill_data.products.add(product_data)
+
+    else:
+        await bill_data.products.remove(product_data)
+
+    return json_response({'product_id': product_id, 'product_status': product_status})
