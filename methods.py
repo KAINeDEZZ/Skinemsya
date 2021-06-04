@@ -500,6 +500,11 @@ async def get_all_bills(purchase_data, is_owner):
     return json_response(bills)
 
 
+async def bill_status(purchase_data, user_data):
+    bill_data = await Bill.filter(purchase=purchase_data, user=user_data).first()
+    return json_response({'status': bill_data.status})
+
+
 async def bill_sent(purchase_data, user_data):
     if purchase_data.status is not PurchaseStatus.BILL:
         return json_response({'error': 'Method not allowed fot this purchase status'}, status=400)
