@@ -496,13 +496,7 @@ async def get_all_bills(purchase_data, is_owner):
     if not is_owner:
         return json_response({'error': 'No permissions'}, status=400)
 
-    bills = []
-    for bill_data in await Bill.filter(purchase=purchase_data).select_related('user'):
-        bills.append({
-            'user_id': bill_data.user.pk,
-            'status': bill_data.status
-        })
-
+    bills = [bill_data.user.user_id for bill_data in await Bill.filter(purchase=purchase_data).select_related('user')]
     return json_response(bills)
 
 
