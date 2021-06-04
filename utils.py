@@ -5,12 +5,6 @@ from hashlib import sha256
 from hmac import HMAC
 from urllib.parse import urlencode
 
-from aiohttp.web import json_response
-
-import datetime
-
-from models import User, Purchase, PurchaseStatus
-
 
 def is_valid(query: dict, sign, secret: str) -> bool:
     """Check VK Apps signature"""

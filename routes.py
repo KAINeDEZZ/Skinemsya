@@ -29,6 +29,10 @@ routes = [
     get('/products/delete/', delete_product),
 
     get('/bill/pick/', bill_pick),
-    get('/bill/get/', get_bill)
+    get('/bill/get/', get_bill),
+    get('/bill/get_all/', get_all_bills),
+    get('/bill/set_sent/', bill_sent),
+    get('/bill/confirm/', bill_confirm),
+
 ]
 

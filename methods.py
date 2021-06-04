@@ -5,10 +5,10 @@ import datetime
 import json
 
 from tortoise.functions import Count
-from tortoise.query_utils import Prefetch
+from tortoise.query_utils import Prefetch, Q
 
 import utils
-from models import User, Purchase, Invites, Product, Bill
+from models import User, Purchase, Invites, Product, Bill, PurchaseStatus, BillStatus
 
 
 async def auth(request, sign, vk_user_id):
@@ -453,10 +453,19 @@ async def bill_pick(user_data, purchase_data, product_id, product_status):
     return json_response({'product_id': product_id, 'product_status': product_status})
 
 
-async def get_bill(purchase_data, user_data):
+async def get_bill(purchase_data, user_data, is_owner, target_id=None):
+    if target_id and not is_owner:
+        return json_response({'error': 'No permissions'}, status=400)
+
     products_data = await Product.filter(purchase=purchase_data).annotate(bills_count=Count('bills__id'))
+
+    if target_id:
+        user_filter = Q(bills__user__id=target_id)
+    else:
+        user_filter = Q(bills__user=user_data)
+
     bill_products = set(
-        await Product.filter(purchase=purchase_data, bills__user=user_data).values_list('id', flat=True)
+        await Product.filter(user_filter, purchase=purchase_data).values_list('id', flat=True)
     )
 
     products = []
@@ -481,3 +490,42 @@ async def get_bill(purchase_data, user_data):
             })
 
     return json_response({'bill': bill, 'products': products})
+
+
+async def get_all_bills(purchase_data, is_owner):
+    if not is_owner:
+        return json_response({'error': 'No permissions'}, status=400)
+
+    bills = []
+    for bill_data in await Bill.filter(purchase=purchase_data).select_related('user'):
+        bills.append({
+            'user_id': bill_data.user.pk,
+            'status': bill_data.status
+        })
+
+    return json_response(bills)
+
+
+async def bill_sent(purchase_data, user_data):
+    if purchase_data.status is not PurchaseStatus.BILL:
+        return json_response({'error': 'Method not allowed fot this purchase status'}, status=400)
+
+    bill_data = await Bill.filter(purchase=purchase_data, user=user_data).first()
+    bill_data.status = BillStatus.SENT
+    await bill_data.save()
+
+    return json_response({'bill_id': bill_data.pk})
+
+
+async def bill_confirm(purchase_data, target_id, is_owner):
+    if purchase_data.status is not PurchaseStatus.BILL:
+        return json_response({'error': 'Method not allowed fot this purchase status'}, status=400)
+
+    if not is_owner:
+        return json_response({'error': 'No permissions'}, status=400)
+
+    bill_data = await Bill.filter(purchase=purchase_data, user__id=target_id).first()
+    bill_data.status = BillStatus.CONFIRM
+    await bill_data.save()
+
+    return json_response({'bill_id': bill_data.pk})
