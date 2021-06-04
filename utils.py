@@ -9,7 +9,7 @@ from aiohttp.web import json_response
 
 import datetime
 
-from models import User, Purchase
+from models import User, Purchase, PurchaseStatus
 
 
 def is_valid(query: dict, sign, secret: str) -> bool:

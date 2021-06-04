@@ -1,10 +1,14 @@
+import asyncio
+
 from aiohttp import web
 
 import datetime
 import inspect
 
+from tortoise.query_utils import Q
+
 from routes import routes
-from models import User, Purchase
+from models import User, Purchase, PurchaseStatus
 from tortoise import Tortoise
 
 
@@ -14,6 +18,7 @@ class Core:
         self.app.add_routes(routes)
 
         self.app.on_startup.append(self.init_db)
+        self.app.on_startup.append(self.background_task_factory)
 
         self.app.middlewares.append(self.add_middleware_data)
         self.app.middlewares.append(self.print_request)
@@ -154,6 +159,33 @@ class Core:
 
         response = await handler(**kwargs)
         return response
+
+    async def background_task_factory(self, app):
+        asyncio.create_task(self.purchase_status_updater())
+
+    @staticmethod
+    async def purchase_status_updater():
+        while True:
+            print('Status handler')
+
+            today = datetime.date.today()
+            pick_to_bill = Q(billing_at__lte=today, status=PurchaseStatus.PICK)
+            bill_to_end = Q(ending_at__lte=today, status=PurchaseStatus.BILL)
+            pick_to_end = Q(ending_at__lte=today, status=PurchaseStatus.PICK)
+
+            for purchase in await Purchase.filter(Q(pick_to_bill | bill_to_end | pick_to_end)):
+                if purchase.ending_at <= today:
+                    purchase.status = PurchaseStatus.END
+
+                elif purchase.billing_at <= today:
+                    purchase.status = PurchaseStatus.BILL
+
+                else:
+                    print(f'Background bug: {purchase.billing_at}, {purchase.ending_at}, {purchase.status}')
+
+                await purchase.save()
+
+            await asyncio.sleep(3600)
 
     def run(self):
         web.run_app(self.app, port=8082)

@@ -20,7 +20,7 @@ class User(Model):
 class PurchaseStatus(str, enum.Enum):
     PICK = 'pick'
     BILL = 'bill'
-    FINIS = 'finish'
+    END = 'end'
 
 
 class Purchase(Model):
