@@ -460,7 +460,7 @@ async def get_bill(purchase_data, user_data, is_owner, target_id=None):
     products_data = await Product.filter(purchase=purchase_data).annotate(bills_count=Count('bills__id'))
 
     if target_id:
-        user_filter = Q(bills__user__id=target_id)
+        user_filter = Q(bills__user__user_id=target_id)
     else:
         user_filter = Q(bills__user=user_data)
 
@@ -500,8 +500,16 @@ async def get_all_bills(purchase_data, is_owner):
     return json_response(bills)
 
 
-async def bill_status(purchase_data, user_data):
-    bill_data = await Bill.filter(purchase=purchase_data, user=user_data).first()
+async def bill_status(purchase_data, user_data, is_owner, target_id=None):
+    if target_id and not is_owner:
+        return json_response({'error': 'No permissions'}, status=400)
+
+    if target_id:
+        user_filter = Q(user__user_id=target_id)
+    else:
+        user_filter = Q(user=user_data)
+
+    bill_data = await Bill.filter(user_filter, purchase=purchase_data).first()
     return json_response({'status': bill_data.status})
 
 
