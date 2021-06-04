@@ -523,7 +523,7 @@ async def bill_confirm(purchase_data, target_id, is_owner):
     if not is_owner:
         return json_response({'error': 'No permissions'}, status=400)
 
-    bill_data = await Bill.filter(purchase=purchase_data, user__id=target_id).first()
+    bill_data = await Bill.filter(purchase=purchase_data, user__user_id=target_id).first()
     bill_data.status = BillStatus.CONFIRM
     await bill_data.save()
 
