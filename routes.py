@@ -23,6 +23,7 @@ routes = [
     get('/invites/refuse/', refuse_invite),
 
     get('/products/get_all/', get_all_products),
+    get('/products/get/', get_product),
     get('/products/create/', create_product),
     get('/products/edit/', edit_product),
     get('/products/delete/', delete_product),

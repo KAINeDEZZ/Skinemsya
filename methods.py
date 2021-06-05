@@ -358,6 +358,20 @@ async def get_all_products(user_data, purchase_data):
     return json_response(products)
 
 
+async def get_product(purchase_data, product_id):
+    product_data = await Product.filter(purchase=purchase_data, id=product_id).first()
+    if not product_data:
+        return json_response({'error': 'Product not found'}, status=404)
+
+    return json_response({
+        'title': product_data.title,
+        'description': product_data.description,
+        'cost': product_data.cost
+    })
+
+
+
+
 async def create_product(purchase_data, title, cost, description=None):
     """
     Создание продукта
