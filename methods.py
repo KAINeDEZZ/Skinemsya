@@ -54,7 +54,7 @@ async def get_all_purchases(user_data):
     """
 
     purchases = []
-    for purchase in await Purchase.filter(members=user_data):
+    for purchase in await Purchase.filter(members=user_data).select_related('owner'):
         purchases.append({
             'id': purchase.pk,
             'status': purchase.status,
@@ -67,7 +67,7 @@ async def get_all_purchases(user_data):
             'ending_at': purchase.ending_at.isoformat(),
 
             'invite_key': purchase.invite_key,
-            'is_owner': True if purchase.owner == user_data.user_id else False
+            'is_owner': True if purchase.owner == user_data else False
         })
 
     return json_response(purchases)
