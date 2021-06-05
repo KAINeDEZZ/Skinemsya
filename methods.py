@@ -191,7 +191,7 @@ async def edit_purchase(purchase_data, is_owner, title=None, description=None, b
             billing_at = datetime.date.fromisoformat(billing_at)
             purchase_data.billing_at = billing_at
 
-            if billing_at <= purchase_data.start_at or billing_at <= today:
+            if billing_at <= purchase_data.created_at or billing_at <= today or billing_at >= purchase_data.ending_at:
                 return json_response({'error': 'Invalid datetime'}, status=400)
 
         if ending_at:
@@ -368,8 +368,6 @@ async def get_product(purchase_data, product_id):
         'description': product_data.description,
         'cost': product_data.cost
     })
-
-
 
 
 async def create_product(purchase_data, title, cost, description=None):
