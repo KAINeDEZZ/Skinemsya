@@ -157,54 +157,56 @@ async def create_purchase(user_data, title, billing_at, ending_at, description=N
     return json_response({'created': purchase_data.pk})
 
 
-# async def edit_purchase(user_id, purchase_id, title=None, description=None, billing_at=None, ending_at=None):
-#     # TODO
-#     """
-#     Редактирование закупки
-#
-#     :param purchase_id:
-#     :type purchase_id: int
-#
-#     :param title:
-#     :type title: str
-#
-#     :param description:
-#     :type description: str
-#
-#     :return: Response
-#     """
-#     user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
-#     if not purchase_data:
-#         return user_data
-#
-#     was_set = []
-#     if title:
-#         purchase_data.title = title
-#         was_set.append('title')
-#
-#     if description:
-#         purchase_data.description = description
-#         was_set.append('description')
-#
-#     if billing_at or ending_at:
-#         billing_at = utils.load_datetime(billing_at)
-#         ending_at = utils.load_datetime(ending_at)
-#
-#         if (billing_at and ending_at and not purchase_data.start_at < billing_at < ending_at) or \
-#                 (billing_at and not purchase_data.start_at < billing_at) or \
-#                 (ending_at and not purchase_data.start_at < ending_at):
-#             return json_response({'error': 'Invalid datetime'}, status=400)
-#
-#         if billing_at:
-#             purchase_data.billing_at = billing_at
-#             was_set.append('billing_at')
-#
-#         if ending_at:
-#             purchase_data.ending_at = ending_at
-#             was_set.append('ending_at')
-#
-#     await Purchase.async_update(purchase_data)
-#     return json_response({'was_set': was_set})
+async def edit_purchase(purchase_data, is_owner, title=None, description=None, billing_at=None, ending_at=None):
+    """
+    Редактирование закупки
+
+    :param purchase_id:
+    :type purchase_id: int
+
+    :param title:
+    :type title: str
+
+    :param description:
+    :type description: str
+
+    :return: Response
+    """
+    if not is_owner:
+        return json_response({'error': 'No permissions'}, status=400)
+
+    try:
+        if title:
+            purchase_data.title = title
+
+        if description:
+            purchase_data.description = description
+
+    except ValueError:
+        return json_response({'error': 'Invalid datetime'}, status=400)
+
+    today = datetime.date.today()
+    if billing_at or ending_at:
+        if billing_at:
+            billing_at = datetime.date.fromisoformat(billing_at)
+            purchase_data.billing_at = billing_at
+
+            if billing_at <= purchase_data.start_at or billing_at <= today:
+                return json_response({'error': 'Invalid datetime'}, status=400)
+
+        if ending_at:
+            ending_at = datetime.date.fromisoformat(ending_at)
+            purchase_data.ending_at = ending_at
+
+            if ending_at <= purchase_data.billing_at or ending_at <= today:
+                return json_response({'error': 'Invalid datetime'}, status=400)
+
+        if billing_at and ending_at:
+            if ending_at <= billing_at:
+                return json_response({'error': 'Invalid datetime'}, status=400)
+
+    await purchase_data.save()
+    return json_response({'purchase_id': purchase_data.pk})
 
 
 async def delete_purchase(purchase_data, is_owner):
@@ -386,54 +388,44 @@ async def create_product(purchase_data, title, cost, description=None):
     return json_response({'product_id': product_data.pk})
 
 
-# async def edit_product(user_id, purchase_id, product_id, title=None, description=None, cost=None):
-#     #TODO
-#     """
-#     Редактирование продукта
-#
-#     :param product_id: ID Продукта
-#     :type product_id: int
-#
-#     :param title: Название продукта
-#     :type title: str
-#
-#     :param description: Описание продукта
-#     :type description: str
-#
-#     :param cost: Цена продукта
-#     :type cost: int
-#
-#     :return: Response
-#     """
-#
-#     user_data, purchase_data = await utils.check_purchase_permission(user_id, purchase_id)
-#     if not purchase_data:
-#         return user_data
-#
-#     product_data = await Product.request(id=product_id)
-#     if not product_data:
-#         return json_response({'error': 'Product not found'}, status=404)
-#
-#     product_data = purchase_data[0]
-#
-#     if cost and cost < 0:
-#         return json_response({'error': 'Invalid cost'}, status=400)
-#
-#     was_set = []
-#     if title:
-#         product_data.title = title
-#         was_set.append('title')
-#
-#     if description:
-#         product_data.description = description
-#         was_set.append('description')
-#
-#     if cost:
-#         product_data.cost = cost
-#         was_set.append('cost')
-#
-#     await Product.async_update(product_data)
-#     return json_response({'was_set': was_set})
+async def edit_product(purchase_data, product_id, is_owner, title=None, description=None, cost=None):
+    """
+    Редактирование продукта
+
+    :param product_id: ID Продукта
+    :type product_id: int
+
+    :param title: Название продукта
+    :type title: str
+
+    :param description: Описание продукта
+    :type description: str
+
+    :param cost: Цена продукта
+    :type cost: int
+
+    :return: Response
+    """
+    if not is_owner:
+        return json_response({'error': 'No permissions'}, status=400)
+
+    product_data = await Product.filter(id=product_id).first()
+    if not product_data:
+        return json_response({'error': 'Product not found'}, status=404)
+
+    if cost:
+        if cost < 0:
+            return json_response({'error': 'Invalid cost'}, status=400)
+        product_data.cost = cost
+
+    if title:
+        product_data.title = title
+
+    if description:
+        product_data.description = description
+
+    await product_data.save()
+    return json_response({'product_id': product_data.pk})
 
 
 async def delete_product(purchase_data, product_id):
