@@ -54,23 +54,39 @@ async def get_all_purchases(user_data):
     """
 
     purchases = []
-    for purchase in await Purchase.filter(members=user_data).select_related('owner'):
-        purchases.append({
-            'id': purchase.pk,
-            'status': purchase.status,
+    end_purchases = []
+    for purchase_data in await Purchase.filter(members=user_data).select_related('owner').order_by('ending_at'):
+        purchase = {
+            'id': purchase_data.pk,
+            'status': purchase_data.status,
 
-            'title': purchase.title,
-            'description': purchase.description,
+            'title': purchase_data.title,
+            'description': purchase_data.description,
 
-            'created_at': purchase.created_at.isoformat(),
-            'billing_at': purchase.billing_at.isoformat(),
-            'ending_at': purchase.ending_at.isoformat(),
+            'created_at': purchase_data.created_at.isoformat(),
+            'billing_at': purchase_data.billing_at.isoformat(),
+            'ending_at': purchase_data.ending_at.isoformat(),
 
-            'invite_key': purchase.invite_key,
-            'is_owner': True if purchase.owner == user_data else False
-        })
+            'invite_key': purchase_data.invite_key,
+            'is_owner': True if purchase_data.owner == user_data else False
+        }
 
-    return json_response(purchases)
+        if purchase_data.status is PurchaseStatus.PICK:
+            purchase['next_status'] = purchase_data.billing_at
+            purchases.append(purchase)
+
+        elif purchase_data.status is PurchaseStatus.BILL:
+            purchase['next_status'] = purchase_data.ending_at
+            purchases.append(purchase)
+
+        else:
+            end_purchases.append(purchase)
+
+    purchases = sorted(purchases, key=lambda element: element['next_status'])
+    for purchase in purchases:
+        purchase.pop('next_status')
+
+    return json_response(purchases + end_purchases)
 
 
 async def get_purchase(purchase_data, user_data):
