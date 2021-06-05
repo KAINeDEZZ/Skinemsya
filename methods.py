@@ -57,15 +57,17 @@ async def get_all_purchases(user_data):
     for purchase in await Purchase.filter(members=user_data):
         purchases.append({
             'id': purchase.pk,
+            'status': purchase.status,
+
             'title': purchase.title,
             'description': purchase.description,
-            'status': purchase.status,
 
             'created_at': purchase.created_at.isoformat(),
             'billing_at': purchase.billing_at.isoformat(),
             'ending_at': purchase.ending_at.isoformat(),
 
             'invite_key': purchase.invite_key,
+            'is_owner': True if purchase.owner == user_data.user_id else False
         })
 
     return json_response(purchases)
@@ -81,7 +83,7 @@ async def get_purchase(purchase_data, user_data):
     :return: Response
     """
     return json_response({
-        'is_owner': 1 if purchase_data.owner == user_data else 0,
+        'is_owner': True if purchase_data.owner == user_data else False,
         'title': purchase_data.title,
         'description': purchase_data.description,
         'status': purchase_data.status,
@@ -90,10 +92,6 @@ async def get_purchase(purchase_data, user_data):
         'billing_at': purchase_data.billing_at.isoformat(),
         'ending_at': purchase_data.ending_at.isoformat(),
     })
-
-
-async def is_purchase_owner(is_owner):
-    return json_response({'is_owner': is_owner})
 
 
 async def create_purchase(user_data, title, billing_at, ending_at, description=None):
